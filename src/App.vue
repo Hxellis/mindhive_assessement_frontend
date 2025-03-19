@@ -1,74 +1,140 @@
 <template>
-	<div class="flex flex-col bg-gray-900 p-5 h-screen w-screen overflow-hidden">
+	<div class="flex flex-col bg-neutral-900 p-5 h-screen w-screen overflow-hidden">
 		<!-- Header -->
 		<header class="text-3xl mb-5 text-white">Find KL Subway Branches</header>
 
-		<!-- Map Container -->
-		<div class="rounded-xl overflow-hidden flex-1 w-full max-w-screen-lg mx-auto bg-red-500">
-			<GoogleMap
-				:api-key="mapsKey"
-				class="h-full w-full"
-				:center="userLocation"
-				:zoom="13"
-			>
-				<!-- User Circle -->
-				<Circle
-					:options="{
-						center: userLocation,
-						radius: 5000,
-						strokeColor: '#FF0000',
-						strokeOpacity: 0.8,
-						strokeWeight: 2,
-						fillColor: '#FFAAAA',
-						fillOpacity: 0.2,
-					}"
-				/>
-
-				<!-- Subway Markers -->
-				<CustomMarker
-					v-for="subway in subwayList"
-					:key="subway.id"
-					:options="{ position: { lat: subway.latitude, lng: subway.longtitude }, anchorPoint: 'BOTTOM_CENTER' }"
+		<!-- Main Content -->
+		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
+			<!-- Map Section -->
+			<div class="w-full rounded-xl overflow-hidden h-full">
+				<GoogleMap
+					:api-key="mapsKey"
+					class="h-full w-full"
+					:center="center"
+					:zoom="zoom"
 				>
-					<img
-						src="/src/assets/images/bread.png"
-						width="40"
-						height="40"
-						class="transform -translate-y-1/2"
+					<Circle
+						:options="{
+							center: userLocation,
+							radius: 5000,
+							strokeColor: '#FF0000',
+							strokeOpacity: 0.8,
+							strokeWeight: 2,
+							fillColor: '#FFAAAA',
+							fillOpacity: 0.2,
+						}"
 					/>
-				</CustomMarker>		
-			</GoogleMap>
+
+					<CustomMarker
+						v-for="subway in filteredSubwayList"
+						:key="subway.id"
+						:options="{ position: { lat: subway.latitude, lng: subway.longtitude }, anchorPoint: 'BOTTOM_CENTER' }"
+					>
+						<img
+							src="/src/assets/images/bread.png"
+							width="40"
+							height="40"
+							class="transform -translate-y-1/2"
+						/>
+					</CustomMarker>		
+				</GoogleMap>
+			</div>
+
+			<!-- Sidebar or Additional Section -->
+			<div class="w-1/2 text-black p-2 rounded-xl overflow-hidden flex flex-col">
+				<!-- Fixed Button Section -->
+				<div class="my-2 space-x-2">
+					<button
+						:class="[
+							'border rounded px-2 py-1 transition-colors duration-200',
+							showNearbyOnly ? 'bg-stone-800 text-white border-stone-300' : 'text-stone-200 border-stone-200 hover:bg-stone-800'
+						]"
+						@click="showNearbyOnly = true"
+					>
+						Nearby Only
+					</button>
+
+					<button
+						:class="[
+							'border rounded px-2 py-1 transition-colors duration-200',
+							!showNearbyOnly ? 'bg-stone-800 text-white border-stone-300' : 'text-stone-200 border-stone-200 hover:bg-stone-800'
+						]"
+						@click="showNearbyOnly = false"
+					>
+						Reset View
+					</button>
+				</div>
+
+				<!-- Scrollable List Section -->
+				<div class="flex-1 overflow-y-auto space-y-2 pr-1">
+					<SubwayBranchInfo
+						v-for="subwayBranch in filteredSubwayList"
+						:key="subwayBranch.id"
+						:branchData="subwayBranch"
+						@showBranch="(pos) => setMapPoint(pos, 18)"
+					/>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
 
+
 <script setup>
-	import { onMounted, ref } from 'vue';
+	import { onMounted, ref, computed } from 'vue';
 	import { GoogleMap, Marker, CustomMarker, Circle } from 'vue3-google-map'
 
 	const apiUrl = import.meta.env.VITE_API_URL
 	const mapsKey = import.meta.env.VITE_MAPS_API_KEY
 
 	const subwayList = ref([])
-	const userLocation = ref({})
-	// 10.6869, 3.139
-	const selectedSubway = ref([])
+	const userLocation = ref({ lat: 0, lng: 0 })
+
+	const center = ref({ lat: 0, lng: 0 })
+	const zoom = ref(13)
+	// const filteredSubwayList = ref([])
+
+	const showNearbyOnly = ref(false);
+	
+
+
+	function setMapPoint(pos, zoomVal=13) {
+		center.value = pos
+		zoom.value = zoomVal
+	}
+
+	const filteredSubwayList = computed(() => {
+		return showNearbyOnly.value ? subwayList.value.filter(branch => isWithinRadius(branch, userLocation.value, 5000)) : subwayList.value;
+	});
+
+	function isWithinRadius(branch, center, radiusMeters) {
+		const toRad = deg => deg * Math.PI / 180;
+		const R = 6371000; // Earth radius in meters
+		const dLat = toRad(branch.latitude - center.lat);
+		const dLng = toRad(branch.longtitude - center.lng);
+		const a = Math.sin(dLat / 2) ** 2 +
+			Math.cos(toRad(center.lat)) *
+			Math.cos(toRad(branch.latitude)) *
+			Math.sin(dLng / 2) ** 2;
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		return R * c <= radiusMeters;
+	}
 
 
 
 	onMounted(() => {
 
-
-
 		navigator.geolocation.getCurrentPosition(
 			(pos) => {
-				userLocation.value = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+				userLocation.value = ({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+				setMapPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude })
 				console.log(pos.coords.latitude, pos.coords.longitude)
 			},
 			(err) => {
 				console.error("Geolocation error:", err)
 			}
 		)
+
 		// fetch(`${apiUrl}/getAllKLSubway`, {
 		// 	method: "GET"
 		// })
@@ -89,7 +155,7 @@
 		"id": 1,
 		"name": "Subway Menara UOA Bangsar",
 		"address": "Jalan Bangsar Utama 1, Unit 1-2-G, Menara UOA Bangsar, Kuala Lumpur, 59000",
-		"operating_hours": "Monday - Sunday, 8:00 AM - 8:00 PM | Monday - Sunday, 8:00 AM - 8:00 PM",
+		"operating_hours": "Monday - Sunday, 8:00 AM - 8:00 PM",
 		"latitude": 3.128099,
 		"longtitude": 101.67868,
 		"waze_link": "https://www.waze.com/en/live-map/directions/my/federal-territory-of-kuala-lumpur/kuala-lumpur/subway-@-menara-uoa-bangsar?place=ChIJPWFRH5RJzDERvHvlO1uTQpY"
