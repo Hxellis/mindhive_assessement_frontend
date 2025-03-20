@@ -77,27 +77,30 @@
 					<Tab name="Chatbot">
 						<div class="flex flex-col h-full">
 							<!-- Chatbot Output Section -->
-							<div class="flex-1 mb-4 p-3 rounded bg-stone-800 text-white overflow-auto">
-								<div v-if="loading" class="italic text-stone-400 animate-pulse">
-									Generating response, this may take some time...
-								</div>
-								<div v-else-if="chatbotResponse" class="whitespace-pre-wrap">
-									{{ chatbotResponse }}
-								</div>
-								<div v-else class="text-stone-500">Ask me something about KL Subway branches (recommended to filter branches first to speed up answers)</div>
-							</div>
+                            <div class="flex-1 mb-4 p-3 rounded bg-stone-800 text-white overflow-auto max-h-[33vh]">
+                                <div v-if="loading" class="italic text-stone-400 animate-pulse">
+                                    Generating response, this may take some time...
+                                </div>
+                                <div v-else-if="chatbotResponse" class="whitespace-pre-wrap">
+                                    {{ chatbotResponse }}
+                                </div>
+                                <div v-else class="text-stone-500">
+                                    Ask me something about KL Subway branches
+                                </div>
+                            </div>
 
 							<!-- Input + Send Button -->
 							<div class="flex gap-2">
 								<input
 									v-model="chatInput"
 									type="text"
+                                    :disabled="loading"
 									placeholder="Type your question..."
 									class="flex-1 px-3 py-2 text-sm rounded bg-stone-800 text-white placeholder-stone-400 focus:outline-none"
 									@keydown.enter="sendChatbotMessage"
 								/>
 								<button
-									class="px-4 py-2 rounded bg-stone-600 text-white hover:bg-stone-500 disabled:opacity-50"
+									class="px-4 py-2 rounded bg-stone-600 text-white hover:bg-stone-500 disabled:bg-stone-700"
 									@click="sendChatbotMessage"
 									:disabled="loading || !chatInput.trim()"
 								>
@@ -217,7 +220,7 @@
 		})
 
 		try {
-			const response = await fetch(`${apiUrl}/gemmaSendMsg`, {
+			const response = await fetch(`${apiUrl}/chatbotSendMsg`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ 
