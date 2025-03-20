@@ -18,3 +18,28 @@
 ::-webkit-scrollbar-thumb:hover {
     background-color: #a3a3a3; /* Tailwind's neutral-400 */
 }
+
+.tabs-component {
+	display: flex;
+	flex-direction: column;
+}
+
+.tabs-component-tabs {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 0.75rem;
+	border-bottom: 1px solid #444;
+}
+
+.tabs-component-tab {
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+	color: #ccc;
+	border-bottom: 2px solid transparent;
+	transition: all 0.2s;
+}
+
+.tabs-component-tab.is-active {
+	color: white;
+	border-color: #facc15; /* e.g. yellow-400 */
+}

@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-stone-200 p-3 rounded space-y-3" @click="emits('showBranch', { lat: subway.latitude, lng: subway.longtitude })">
+    <div :class="['bg-stone-200 p-3 rounded space-y-3', props.selected ? 'bg-stone-400' : '']" @click="props.selected ? emits('clearBranch') : emits('showBranch', { lat: subway.latitude, lng: subway.longtitude })">
         <div class="flex justify-between align-top">
             <div class="font-bold text-xl">{{ subway.name }}</div>
             <a target="_blank" :href="subway.waze_link" class="hover:scale-110 transition-transform duration-200" @click.stop>
@@ -19,8 +19,8 @@
 <script setup>
 import { computed } from 'vue';
 
-    const props = defineProps(['branchData'])
-    const emits = defineEmits(['showBranch'])
+    const props = defineProps(['branchData', 'selected'])
+    const emits = defineEmits(['showBranch', 'clearBranch'])
 
     const subway = computed(() => ({
         name: props.branchData.name,
